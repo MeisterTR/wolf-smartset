@@ -5,7 +5,9 @@ import httpx
 import logging
 from httpx import Headers
 
-from wolf_smartset.constants import BASE_URL, ID, GATEWAY_ID, NAME, SYSTEM_ID, MENU_ITEMS, TAB_VIEWS, BUNDLE_ID, \
+import json
+
+from wolf_smartset.constants import BASE_URL, ID, GATEWAY_ID, NAME, SYSTEM_ID, MENU_ITEMS, TAB_VIEWS, SUB_MENU_ENTRIES, BUNDLE_ID, \
     BUNDLE, VALUE_ID_LIST, GUI_ID_CHANGED, SESSION_ID, VALUE_ID, VALUE, STATE, VALUES, PARAMETER_ID, UNIT, \
     CELSIUS_TEMPERATURE, BAR, PERCENTAGE, LIST_ITEMS, DISPLAY_TEXT, PARAMETER_DESCRIPTORS, TAB_NAME, HOUR, \
     LAST_ACCESS, ERROR_CODE, ERROR_TYPE, ERROR_MESSAGE, ERROR_READ_PARAMETER, SYSTEM_LIST, GATEWAY_STATE, IS_ONLINE
@@ -94,7 +96,35 @@ class WolfClient:
         payload = {GATEWAY_ID: gateway_id, SYSTEM_ID: system_id}
         desc = await self.__request('get', 'api/portal/GetGuiDescriptionForGateway', params=payload)
         _LOGGER.debug('Fetched parameters: %s', desc)
+        #devpart
+        json_object = json.dumps(desc, indent=4)
+        with open("sample.json", "w") as outfile:
+            outfile.write(json_object)
+        #print(desc)
         tab_views = desc[MENU_ITEMS][0][TAB_VIEWS]
+        result = [WolfClient._map_view(view) for view in tab_views]
+
+        result.reverse()
+        distinct_ids = []
+        flattened = []
+        for sublist in result:
+            distinct_names = []
+            for val in sublist:
+                if val.value_id not in distinct_ids and val.name not in distinct_names:
+                    distinct_ids.append(val.value_id)
+                    distinct_names.append(val.name)
+                    flattened.append(val)
+        return flattened
+
+    # api/portal/GetGuiDescriptionForGateway?GatewayId={gateway_id}&SystemId={system_id}
+    async def fetch_all_parameters(self, gateway_id, system_id) -> [Parameter]:
+        payload = {GATEWAY_ID: gateway_id, SYSTEM_ID: system_id}
+        desc = await self.__request('get', 'api/portal/GetGuiDescriptionForGateway', params=payload)
+        _LOGGER.debug('Fetched parameters: %s', desc)
+        tab_views = desc[MENU_ITEMS][0][TAB_VIEWS]
+        # add Fachmann data
+        for view in desc[MENU_ITEMS][1][SUB_MENU_ENTRIES]:
+            tab_views.extend(view[TAB_VIEWS])
         result = [WolfClient._map_view(view) for view in tab_views]
 
         result.reverse()

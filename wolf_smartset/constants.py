@@ -20,6 +20,8 @@ SYSTEM_ID = 'SystemId'
 
 TAB_VIEWS = 'TabViews'
 
+SUB_MENU_ENTRIES = 'SubMenuEntries'
+
 MENU_ITEMS = 'MenuItems'
 
 GATEWAY_ID = "GatewayId"
