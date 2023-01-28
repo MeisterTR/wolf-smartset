@@ -60,7 +60,11 @@ VALUE = 'Value'
 
 PARAMETER_ID = 'ParameterId'
 
+PARAMETER_NAME = 'ParameterName'
+
 PARAMETER_DESCRIPTORS = 'ParameterDescriptors'
+
+WRITE_PARAMETER_VALUES= 'WriteParameterValues'
 
 UNIT = 'Unit'
 

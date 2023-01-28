@@ -7,7 +7,7 @@ from httpx import Headers
 
 import json
 
-from wolf_smartset.constants import BASE_URL, ID, GATEWAY_ID, NAME, SYSTEM_ID, MENU_ITEMS, TAB_VIEWS, SUB_MENU_ENTRIES, BUNDLE_ID, \
+from wolf_smartset.constants import BASE_URL, ID, GATEWAY_ID, NAME, SYSTEM_ID, WRITE_PARAMETER_VALUES, PARAMETER_NAME, MENU_ITEMS, TAB_VIEWS, SUB_MENU_ENTRIES, BUNDLE_ID, \
     BUNDLE, VALUE_ID_LIST, GUI_ID_CHANGED, SESSION_ID, VALUE_ID, VALUE, STATE, VALUES, PARAMETER_ID, UNIT, \
     CELSIUS_TEMPERATURE, BAR, PERCENTAGE, LIST_ITEMS, DISPLAY_TEXT, PARAMETER_DESCRIPTORS, TAB_NAME, HOUR, \
     LAST_ACCESS, ERROR_CODE, ERROR_TYPE, ERROR_MESSAGE, ERROR_READ_PARAMETER, SYSTEM_LIST, GATEWAY_STATE, IS_ONLINE
@@ -171,6 +171,31 @@ class WolfClient:
 
         self.last_access = res[LAST_ACCESS]
         return [Value(v[VALUE_ID], v[VALUE], v[STATE]) for v in res[VALUES] if VALUE in v]
+
+    # api/portal/WriteParameterValues
+    async def set_value(self, gateway_id, system_id, parameter, value):
+        data = {
+            BUNDLE_ID: 1000,
+            BUNDLE: False,
+            WRITE_PARAMETER_VALUES: [{PARAMETER_ID: parameter.parameter_id, VALUE_ID : parameter.value_id, PARAMETER_NAME: parameter.name, VALUE: str(value)}],
+            GATEWAY_ID: gateway_id,
+            SYSTEM_ID: system_id,
+            GUI_ID_CHANGED: False,
+            SESSION_ID: self.session_id,
+            LAST_ACCESS: self.last_access
+        }
+        res = await self.__request('post', 'api/portal/WriteParameterValues', json=data,
+                                   headers={"Content-Type": "application/json"})
+
+        _LOGGER.debug('Fetched values: %s', res)
+
+        if ERROR_CODE in res or ERROR_TYPE in res:
+            if ERROR_MESSAGE in res and res[ERROR_MESSAGE] == ERROR_READ_PARAMETER:
+                raise ParameterReadError(res)
+            raise FetchFailed(res)
+
+        self.last_access = res[LAST_ACCESS]
+        return 1
 
     @staticmethod
     def _map_parameter(parameter: dict, parent: str) -> Parameter:
